@@ -110,6 +110,36 @@ module Hydratable
       end
     end
 
+    def assign_associations(association, requested_fields)
+      @ar_includes = @ar_includes.merge deep_build_association_includes(association, requested_fields)
+    end
+
+    def find_association(field)
+      model_class.hydratable_associations.select { |scope_name, scope_attrs| scope_name.to_s == field.to_s }
+    end
+
+    def deep_build_association_includes(association_definition, requested_fields = {}, prefix = '')
+      name_      = association_definition.keys.first
+      table_name = association_definition[name_][:table_name]
+      fields = requested_fields.deep_find(name_)
+
+      if fields && (included_fields = fields.select { |k, v| v == true }.try(:keys))
+        prefix = "#{prefix.to_s + '.' if prefix.present?}#{table_name}".to_sym
+        if included_fields.present?
+          @fields[table_name.to_s.singularize.to_sym] ||= []
+          @fields[table_name.to_s.singularize.to_sym]  += included_fields
+          @jsonapi_includes << prefix
+        end
+      end
+
+      return table_name unless association_definition[name_][:associations]
+      association_definition[name_][:associations].each_with_object({}) do |sub_association, ret|
+        ret[table_name] = deep_build_association_includes({sub_association[0] => sub_association[1]}, requested_fields, prefix)
+      end
+    end
+  end
+end
+
 # Taken from:
 #   https://stackoverflow.com/questions/8301566/find-key-value-pairs-deep-inside-a-hash-containing-an-arbitrary-number-of-nested
 class Hash
