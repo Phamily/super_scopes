@@ -5,9 +5,11 @@ module Hydratable
     def hydratable(opts)
       class << self
         attr_accessor :hydratable_scopes
+        attr_accessor :hydratable_associations
       end
 
-      @hydratable_scopes = opts[:available_scopes] || {}
+      @hydratable_scopes       = opts[:available_scopes]       || {}
+      @hydratable_associations = opts[:available_associations] || {}
 
       unless all_scopes_exist?
         raise(ArgumentError, "1 or more scopes is not defined on #{self.class}")
