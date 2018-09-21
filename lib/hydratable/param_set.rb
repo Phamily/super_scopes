@@ -49,8 +49,7 @@ module Hydratable
     def find_scope(field)
       model_class.hydratable_scopes.select do |scope_name, scope_attrs|
         scope_name.to_s == field.to_s ||
-        # Only check for fields on the model_class
-        (!scope_attrs[:table] && scope_attrs[:fields] && scope_attrs[:fields].include?(field))
+        (scope_attrs[:fields] && scope_attrs[:fields].include?(field))
       end
     end
 
