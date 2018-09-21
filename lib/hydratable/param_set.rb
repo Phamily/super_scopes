@@ -26,7 +26,7 @@ module Hydratable
 
   protected
     def assign_fields
-      serialization_params.keys - model_class.hydratable_scopes.keys
+      serialization_params.keys - model_class.hydratable_scopes.keys - model_class.hydratable_associations.keys
     end
 
     def assign_scopes
