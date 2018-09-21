@@ -110,5 +110,16 @@ module Hydratable
         default_arg[:default].is_a?(Proc) ? default_arg[:default].call() : default_arg[:default]
       end
     end
+
+# Taken from:
+#   https://stackoverflow.com/questions/8301566/find-key-value-pairs-deep-inside-a-hash-containing-an-arbitrary-number-of-nested
+class Hash
+  def deep_find(key, object=self, found=nil)
+    if object.respond_to?(:key?) && object.key?(key)
+      return object[key]
+    elsif object.is_a? Enumerable
+      object.find { |*a| found = deep_find(key, a.last) }
+      return found
+    end
   end
 end
