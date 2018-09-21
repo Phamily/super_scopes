@@ -7,20 +7,23 @@ module Hydratable
 
     attr_accessor :fields
     attr_accessor :scopes
-    attr_accessor :includes
+    attr_accessor :ar_includes
+    attr_accessor :jsonapi_includes
     attr_accessor :request_ctx
 
     def initialize(a_model_class, serialization_params, scope_args = {}, ctx)
       @model_class          = a_model_class
       @request_ctx          = ctx
       @fields               = {}
-      @includes             = []
       @applied_scopes       = []
       @serialization_params = serialization_params.symbolize_keys!
       @scope_args           = scope_args.symbolize_keys!
       @table_name           = a_model_class.name.downcase.to_sym
       @fields[@table_name]  = assign_fields
-      @scopes               = assign_scopes
+
+      @scopes               = {}
+      @ar_includes          = {}
+      @jsonapi_includes     = []
     end
 
 
