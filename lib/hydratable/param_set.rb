@@ -24,6 +24,7 @@ module Hydratable
       @scopes               = {}
       @ar_includes          = {}
       @jsonapi_includes     = []
+      init_scopes_and_includes
     end
 
 
@@ -32,8 +33,17 @@ module Hydratable
       serialization_params.keys - model_class.hydratable_scopes.keys - model_class.hydratable_associations.keys
     end
 
-
+    def init_scopes_and_includes
+      serialization_params.each do |param_field_name, param_field_args|
+        if (scope_to_apply = find_scope(param_field_name)).present?
+          assign_scopes(scope_to_apply, param_field_name, param_field_args)
         end
+
+        if (association_to_include = find_association(param_field_name)).present?
+          assign_associations(association_to_include, {param_field_name => param_field_args})
+        end
+      end
+    end
 
     def assign_scopes(scope, param_field_name, param_field_args)
       scope_name = scope.keys.first
