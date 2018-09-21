@@ -29,21 +29,19 @@ module Hydratable
       serialization_params.keys - model_class.hydratable_scopes.keys - model_class.hydratable_associations.keys
     end
 
-    def assign_scopes
-      serialization_params.each_with_object({}) do |(param_field_name, param_field_args), ret|
-        next unless (scope_to_apply = find_scope(param_field_name)).present?
-        scope_name = scope_to_apply.keys.first
 
-        next if @applied_scopes.include? scope_name
-        @applied_scopes << scope_name
-
-        if param_field_name.to_s == scope_name.to_s
-          assign_scope_fields(scope_to_apply, param_field_name, param_field_args)
-          scope_args = param_field_args
         end
 
-        ret.send :[]=, scope_name, generate_args_for_scope(scope_to_apply, scope_name, scope_args)
+    def assign_scopes(scope, param_field_name, param_field_args)
+      scope_name = scope.keys.first
+      return if @applied_scopes.include? scope_name
+      @applied_scopes << scope_name
+
+      if param_field_name.to_s == scope_name.to_s
+        @fields[@table_name] += scope[scope_name][:fields] if scope[scope_name][:fields]
+        scope_args = param_field_args
       end
+      @scopes[scope_name] = generate_args_for_scope(scope, scope_name, scope_args)
     end
 
     def find_scope(field)
@@ -51,29 +49,6 @@ module Hydratable
         scope_name.to_s == field.to_s ||
         (scope_attrs[:fields] && scope_attrs[:fields].include?(field))
       end
-    end
-
-    def assign_scope_fields(scope, scope_name, scope_args)
-      return unless scope[scope_name][:fields]
-      # If requested scope is an association (i.e. has table_name set) only add requested fields
-      if scope[scope_name][:table]
-
-        table_name = scope[scope_name][:table].name.downcase.to_sym
-        @fields[table_name] ||= []
-
-        # if args are a hash assume the 'args' is actually an object with field keys and boolean values
-        if scope_args.is_a?(Hash)
-          @fields[table_name]  += scope_args.select { |e| e }.keys
-        else
-          @fields[table_name]  += scope[scope_name][:fields]
-        end
-
-        @includes << scope[scope_name][:table].table_name.to_sym
-      else
-        # Otherwise (i.e. scope is a filter or hydration) add all associated fields
-        @fields[@table_name] += scope[scope_name][:fields]
-      end
-
     end
 
     def generate_args_for_scope(scope, scope_name, input_args = {})
@@ -87,7 +62,6 @@ module Hydratable
         arg_val  = get_arg_value(default_arg, input_args, treat_input_as_arg)
         ret.send :[]=, arg_name, arg_val
       end
-
     end
 
     def get_arg_value(default_arg, input_args, treat_input_as_arg)
