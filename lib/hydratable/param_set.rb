@@ -119,9 +119,13 @@ module Hydratable
         end
       end
 
-      return table_name unless association_definition[name_][:associations]
+      return { table_name => {} } unless association_definition[name_][:associations]
       association_definition[name_][:associations].each_with_object({}) do |sub_association, ret|
-        ret[table_name] = deep_build_association_includes({sub_association[0] => sub_association[1]}, requested_fields, prefix)
+        if requested_fields.deep_find(sub_association[0]).present?
+          ret[table_name] = deep_build_association_includes({sub_association[0] => sub_association[1]}, requested_fields, prefix)
+        else
+          ret[table_name] = {}
+        end
       end
     end
   end
