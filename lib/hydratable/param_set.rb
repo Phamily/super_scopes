@@ -36,6 +36,7 @@ module Hydratable
     def init_scopes_and_includes
       serialization_params.each do |param_field_name, param_field_args|
         if (scope_to_apply = find_scope(param_field_name)).present?
+          raise ArgumentError, "Multiple scopes found for field: #{param_field_name}. " unless scope_to_apply.length == 1
           assign_scopes(scope_to_apply, param_field_name, param_field_args)
         end
 
@@ -109,7 +110,6 @@ module Hydratable
       name_      = association_definition.keys.first
       table_name = association_definition[name_][:table_name]
       fields = requested_fields.deep_find(name_)
-
       if fields && (included_fields = fields.select { |k, v| v == true }.try(:keys))
         prefix = "#{prefix.to_s + '.' if prefix.present?}#{table_name}".to_sym
         if included_fields.present?
