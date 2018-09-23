@@ -107,24 +107,25 @@ module Hydratable
     end
 
     def deep_build_association_includes(association_definition, requested_fields = {}, prefix = '')
-      name_      = association_definition.keys.first
-      table_name = association_definition[name_][:table_name]
-      fields = requested_fields.deep_find(name_)
+      association_key  = association_definition.keys.first
+      association_name = association_definition[association_key][:name]
+
+      fields = requested_fields.deep_find(association_key)
       if fields && (included_fields = fields.select { |k, v| v == true }.try(:keys))
-        prefix = "#{prefix.to_s + '.' if prefix.present?}#{table_name}".to_sym
+        prefix = "#{prefix.to_s + '.' if prefix.present?}#{association_name}".to_sym
         if included_fields.present?
-          @fields[table_name.to_s.singularize.to_sym] ||= []
-          @fields[table_name.to_s.singularize.to_sym]  += included_fields
+          # ASK: Does this need to refer to the record_type (not assocation_name) for jsonapi?
+          @fields[association_name.to_s.singularize.to_sym] ||= []
+          @fields[association_name.to_s.singularize.to_sym]  += included_fields
           @jsonapi_includes << prefix
         end
       end
-
-      return { table_name => {} } unless association_definition[name_][:associations]
-      association_definition[name_][:associations].each_with_object({}) do |sub_association, ret|
+      return { association_name => {} } unless association_definition[association_key][:associations]
+      association_definition[association_key][:associations].each_with_object({}) do |sub_association, ret|
         if requested_fields.deep_find(sub_association[0]).present?
-          ret[table_name] = deep_build_association_includes({sub_association[0] => sub_association[1]}, requested_fields, prefix)
+          ret[association_name] = deep_build_association_includes({sub_association[0] => sub_association[1]}, requested_fields, prefix)
         else
-          ret[table_name] = {}
+          ret[association_name] = {}
         end
       end
     end
