@@ -99,21 +99,24 @@ module Hydratable
     end
 
     def assign_associations(association, requested_fields)
-      @ar_includes = @ar_includes.merge deep_build_association_includes(association, requested_fields)
+      @ar_includes = @ar_includes.merge deep_build_association_includes(@table_name, association, requested_fields)
     end
 
     def find_association(field)
       model_class.hydratable_associations.select { |scope_name, scope_attrs| scope_name.to_s == field.to_s }
     end
 
-    def deep_build_association_includes(association_definition, requested_fields = {}, prefix = '')
+    def deep_build_association_includes(table_name, association_definition, requested_fields = {}, prefix = '')
       association_key  = association_definition.keys.first
       association_name = association_definition[association_key][:name]
+      table_name       = table_name.to_s.singularize.to_sym
 
       fields = requested_fields.deep_find(association_key)
       if fields && (included_fields = fields.select { |k, v| v == true }.try(:keys))
         prefix = "#{prefix.to_s + '.' if prefix.present?}#{association_name}".to_sym
         if included_fields.present?
+
+          @fields[table_name] << association_name
           # ASK: Does this need to refer to the record_type (not assocation_name) for jsonapi?
           @fields[association_name.to_s.singularize.to_sym] ||= []
           @fields[association_name.to_s.singularize.to_sym]  += included_fields
@@ -121,9 +124,10 @@ module Hydratable
         end
       end
       return { association_name => {} } unless association_definition[association_key][:associations]
+
       association_definition[association_key][:associations].each_with_object({}) do |sub_association, ret|
         if requested_fields.deep_find(sub_association[0]).present?
-          ret[association_name] = deep_build_association_includes({sub_association[0] => sub_association[1]}, requested_fields, prefix)
+          ret[association_name] = deep_build_association_includes(association_name, {sub_association[0] => sub_association[1]}, requested_fields, prefix)
         else
           ret[association_name] = {}
         end
