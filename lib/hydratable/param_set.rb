@@ -94,7 +94,11 @@ module Hydratable
         end
       else
         # Call default args
-        default_arg[:default].is_a?(Proc) ? default_arg[:default].call() : default_arg[:default]
+        if default_arg[:default].is_a?(Proc)
+          request_ctx.present? ? request_ctx.instance_eval(&default_arg[:default]) : default_arg[:default].call()
+        else
+          default_arg[:default]
+        end
       end
     end
 
