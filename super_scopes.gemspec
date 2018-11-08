@@ -6,6 +6,6 @@ Gem::Specification.new do |s|
   s.description = "Dynamic SQL-backed field hydration"
   s.authors     = ["Bryce Harlan"]
   s.email       = 'bryce@jaanhealth.com'
-  s.files       = ["lib/hydratable.rb"]
+  s.files       = ["lib/super_scopes.rb"]
   s.license       = 'MIT'
 end
