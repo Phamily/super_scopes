@@ -18,7 +18,7 @@ module Hydratable
       @applied_scopes       = []
       @serialization_params = serialization_params.symbolize_keys!
       @scope_args           = scope_args.symbolize_keys!
-      @table_name           = a_model_class.name.downcase.to_sym
+      @table_name           = a_model_class.model_name.singular.to_sym
       @fields[@table_name]  = assign_fields
 
       @scopes               = {}
@@ -113,7 +113,8 @@ module Hydratable
     def deep_build_association_includes(table_name, association_definition, requested_fields = {}, prefix = '')
       association_key  = association_definition.keys.first
       association_name = association_definition[association_key][:name]
-      table_name       = table_name.to_s.singularize.to_sym
+
+      associated_record_type  = association_definition[association_key][:record_type]
 
       fields = requested_fields.deep_find(association_key)
       if fields && (included_fields = fields.select { |k, v| v == true }.try(:keys))
@@ -122,8 +123,8 @@ module Hydratable
 
           @fields[table_name] << association_name
           # ASK: Does this need to refer to the record_type (not assocation_name) for jsonapi?
-          @fields[association_name.to_s.singularize.to_sym] ||= []
-          @fields[association_name.to_s.singularize.to_sym]  += included_fields
+          @fields[associated_record_type] ||= []
+          @fields[associated_record_type]  += included_fields
           @jsonapi_includes << prefix
         end
       end
@@ -131,7 +132,7 @@ module Hydratable
 
       association_definition[association_key][:associations].each_with_object({}) do |sub_association, ret|
         if requested_fields.deep_find(sub_association[0]).present?
-          ret[association_name] = deep_build_association_includes(association_name, {sub_association[0] => sub_association[1]}, requested_fields, prefix)
+          ret[association_name] = deep_build_association_includes(associated_record_type, {sub_association[0] => sub_association[1]}, requested_fields, prefix)
         else
           ret[association_name] = {}
         end
