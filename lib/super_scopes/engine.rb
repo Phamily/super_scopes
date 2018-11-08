@@ -1,6 +1,6 @@
 # require 'hydratable/param_set'
-require 'hydratable/action_controller_extension'
-require 'hydratable/active_record_extension'
+require 'super_scopes/action_controller_extension'
+require 'super_scopes/active_record_extension'
 
 module SuperScopes
   class Engine < ::Rails::Engine
