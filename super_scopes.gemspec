@@ -1,5 +1,5 @@
 Gem::Specification.new do |s|
-  s.name        = 'SuperScopes'
+  s.name        = 'super_scopes'
   s.version     = '0.0.0'
   s.date        = '2018-08-17'
   s.summary     = "Super Scopes!"
