@@ -22,7 +22,7 @@ module SuperScopes
       else
         all
       end
-      ar_rel = ar_rel.includes(hydratable_param_set.ar_includes) if hydratable_param_set.ar_includes.present?
+      ar_rel = ar_rel.preload(hydratable_param_set.ar_includes) if hydratable_param_set.ar_includes.present?
 
       hydratable_param_set.scopes.reduce(ar_rel) { |chain, (scope_name, scope_args)| chain.send(scope_name, scope_args.symbolize_keys!) }
     end
