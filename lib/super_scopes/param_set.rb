@@ -82,23 +82,26 @@ module SuperScopes
       if default_arg[:type] == :internal
         # Always use default for internal arguments + bind request context
         raise 'Request Context must be supplied to internal arguments' unless request_ctx.present?
-        request_ctx.instance_eval(&default_arg[:default])
+        return request_ctx.instance_eval(&default_arg[:default])
+      end
 
-      elsif input_args.present?
+      # Find supplied argument in the input_args hash
+      if input_args.present?
         if input_args.is_a?(Hash)
-          input_args.with_indifferent_access[default_arg[:name]]
+          supplied_arg = input_args.with_indifferent_access[default_arg[:name]]
         elsif treat_input_as_arg
-          input_args
+          supplied_arg = input_args
         else
           raise ArgumentError, 'Supplied non-hash to scope with >1 argument'
         end
+      end
+
+      return supplied_arg if supplied_arg.present?
+
+      if default_arg[:default].is_a?(Proc)
+        request_ctx.present? ? request_ctx.instance_eval(&default_arg[:default]) : default_arg[:default].call()
       else
-        # Call default args
-        if default_arg[:default].is_a?(Proc)
-          request_ctx.present? ? request_ctx.instance_eval(&default_arg[:default]) : default_arg[:default].call()
-        else
-          default_arg[:default]
-        end
+        default_arg[:default]
       end
     end
 
