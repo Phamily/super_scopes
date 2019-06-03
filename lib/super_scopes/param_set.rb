@@ -131,7 +131,7 @@ module SuperScopes
           @jsonapi_includes << prefix
         end
       end
-      return { association_name => {} } unless association_definition[association_key][:associations]
+      return { association_name => {} } unless association_definition[association_key][:associations].present?
 
       association_definition[association_key][:associations].each_with_object({}) do |sub_association, ret|
         if requested_fields.deep_find(sub_association[0]).present?
