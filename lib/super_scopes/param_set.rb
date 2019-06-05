@@ -106,20 +106,22 @@ module SuperScopes
     end
 
     def assign_associations(association, requested_fields)
-      @ar_includes = @ar_includes.merge deep_build_association_includes(@table_name, association, requested_fields)
+      @ar_includes = @ar_includes.merge deep_build_association_includes({}, @table_name, association, requested_fields)
     end
 
     def find_association(field)
       model_class.hydratable_associations.select { |scope_name, scope_attrs| scope_name.to_s == field.to_s }
     end
 
-    def deep_build_association_includes(table_name, association_definition, requested_fields = {}, prefix = '')
+    def deep_build_association_includes(ar_include_obj, table_name, association_definition, requested_fields = {}, prefix = '', definition_prefix = '')
       association_key  = association_definition.keys.first
       association_name = association_definition[association_key][:name]
 
       associated_record_type  = association_definition[association_key][:record_type]
+      definition_prefix += '.' if definition_prefix.present?
+      definition_prefix += association_key
 
-      fields = requested_fields.deep_find(association_key)
+      fields = Rodash.get requested_fields, definition_prefix
       if fields && (included_fields = fields.select { |k, v| v == true }.try(:keys))
         prefix = "#{prefix.to_s + '.' if prefix.present?}#{association_name}".to_sym
         if included_fields.present?
@@ -131,28 +133,19 @@ module SuperScopes
           @jsonapi_includes << prefix
         end
       end
-      return { association_name => {} } unless association_definition[association_key][:associations].present?
+
+      unless association_definition[association_key][:associations].present?
+        Rodash.set(ar_include_obj, definition_prefix, { assocation_name => {} })
+        return ar_include_obj
+      end
 
       association_definition[association_key][:associations].each_with_object({}) do |sub_association, ret|
-        if requested_fields.deep_find(sub_association[0]).present?
-          ret[association_name] = deep_build_association_includes(associated_record_type, {sub_association[0] => sub_association[1]}, requested_fields, prefix)
+        if Rodash.get(requested_fields, sub_association[0]).present?
+          ret[association_name] = deep_build_association_includes(ar_include_obj, associated_record_type, {sub_association[0] => sub_association[1]}, requested_fields, prefix, definition_prefix)
         else
           ret[association_name] = {}
         end
       end
-    end
-  end
-end
-
-# Taken from:
-#   https://stackoverflow.com/questions/8301566/find-key-value-pairs-deep-inside-a-hash-containing-an-arbitrary-number-of-nested
-class Hash
-  def deep_find(key, object=self, found=nil)
-    if object.respond_to?(:key?) && object.key?(key)
-      return object[key]
-    elsif object.is_a? Enumerable
-      object.find { |*a| found = deep_find(key, a.last) }
-      return found
     end
   end
 end
