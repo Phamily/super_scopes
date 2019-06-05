@@ -106,28 +106,28 @@ module SuperScopes
     end
 
     def assign_associations(association, requested_fields)
-      @ar_includes = @ar_includes.merge deep_build_association_includes({}, @table_name, association, requested_fields)
+      @ar_includes = @ar_includes.merge deep_build_association_includes(@table_name, association, requested_fields)
     end
 
     def find_association(field)
       model_class.hydratable_associations.select { |scope_name, scope_attrs| scope_name.to_s == field.to_s }
     end
 
-    def deep_build_association_includes(ar_include_obj, table_name, association_definition, requested_fields = {}, prefix = '', definition_prefix = '')
+    def deep_build_association_includes(table_name, association_definition, requested_fields = {}, prefix = '', definition_prefix = '')
       association_key  = association_definition.keys.first
       association_name = association_definition[association_key][:name]
 
       associated_record_type  = association_definition[association_key][:record_type]
       definition_prefix += '.' if definition_prefix.present?
-      definition_prefix += association_key
+      definition_prefix += association_key.to_s
 
-      fields = Rodash.get requested_fields, definition_prefix
-      if fields && (included_fields = fields.select { |k, v| v == true }.try(:keys))
+      fields = Rodash.get requested_fields.with_indifferent_access, definition_prefix
+      if fields.present? && (included_fields = fields.select { |k, v| v == true }.try(:keys))
         prefix = "#{prefix.to_s + '.' if prefix.present?}#{association_name}".to_sym
         if included_fields.present?
 
           @fields[table_name] << association_name
-          # ASK: Does this need to refer to the record_type (not assocation_name) for jsonapi?
+          # ASK: Does this need to refer to the record_type (not association_name) for jsonapi?
           @fields[associated_record_type] ||= []
           @fields[associated_record_type]  += included_fields
           @jsonapi_includes << prefix
@@ -135,16 +135,19 @@ module SuperScopes
       end
 
       unless association_definition[association_key][:associations].present?
-        Rodash.set(ar_include_obj, definition_prefix, { assocation_name => {} })
-        return ar_include_obj
+        return { association_name => {} }
       end
 
       association_definition[association_key][:associations].each_with_object({}) do |sub_association, ret|
-        if Rodash.get(requested_fields, sub_association[0]).present?
-          ret[association_name] = deep_build_association_includes(ar_include_obj, associated_record_type, {sub_association[0] => sub_association[1]}, requested_fields, prefix, definition_prefix)
-        else
-          ret[association_name] = {}
+        sub_association_key = definition_prefix + '.' + sub_association[0].to_s
+
+        ret[association_name] ||= {}
+
+        if Rodash.get(requested_fields.with_indifferent_access, sub_association_key).present?
+          ret[association_name].merge! deep_build_association_includes(associated_record_type, {sub_association[0] => sub_association[1]}, requested_fields, prefix, definition_prefix)
         end
+
+        ret
       end
     end
   end
