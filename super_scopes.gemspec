@@ -7,6 +7,6 @@ Gem::Specification.new do |s|
   s.authors     = ["Bryce Harlan"]
   s.email       = 'bryce@jaanhealth.com'
   s.files       = ["lib/super_scopes.rb"]
-  s.add_runtime_dependency = 'rodash', '~> 3.0.0'
+  s.add_runtime_dependency = 'rodash'
   s.license       = 'MIT'
 end
