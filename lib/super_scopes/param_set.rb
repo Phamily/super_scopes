@@ -125,7 +125,9 @@ module SuperScopes
       if fields.present? && (included_fields = fields.select { |k, v| v == true }.try(:keys))
         prefix = "#{prefix.to_s + '.' if prefix.present?}#{association_name}".to_sym
         if included_fields.present?
-
+          if @fields[table_name].nil?
+            raise ArgumentError, "Must request at least one field from model: #{table_name} (e.g. 'id') in order to include associated model: #{association_name}"
+          end
           @fields[table_name] << association_name
           # ASK: Does this need to refer to the record_type (not association_name) for jsonapi?
           @fields[associated_record_type] ||= []
